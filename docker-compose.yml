@@ -1,0 +1,51 @@
+version: '3.4'
+
+services:
+  pedidoswebapi:
+    image: ${DOCKER_REGISTRY-}pedidoswebapi
+    build:
+      context: .
+      dockerfile: PedidosWebApi/Dockerfile
+    depends_on:
+      sqldata:
+       condition: service_started
+      rabbitmq:
+       condition: service_healthy
+
+  productoswebapi:
+    image: ${DOCKER_REGISTRY-}productoswebapi
+    build:
+      context: .
+      dockerfile: ProductosWebApi/Dockerfile
+    depends_on:
+      sqldata:
+       condition: service_started
+      rabbitmq:
+       condition: service_healthy
+    deploy:
+        replicas: 3
+
+  sqldata:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "yourStrong(!)Password"
+    ports:
+    - "1433:1433"
+
+  rabbitmq: 
+    image: rabbitmq:3-management 
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" 
+      - "15672:15672" 
+    environment: 
+      - RABBITMQ_DEFAULT_USER=rabbitmquser 
+      - RABBITMQ_DEFAULT_PASS=some_password 
+    healthcheck: 
+        test: rabbitmq-diagnostics -q ping 
+        interval: 10s 
+        timeout: 10s 
+        retries: 5 
+
+  
